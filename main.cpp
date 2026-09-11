@@ -204,186 +204,387 @@ void generateDiscreteLogParameters(long long &a,
     // Получаем y
     y = powerMod(a, secretX, p);
 }
-int main()
+
+// Проверка, является ли число первообразным корнем по модулю p.
+bool isPrimitiveRoot(long long g, long long p)
 {
-    srand(time(0));
+    if (!isPrime(p))
+        return false;
+
+    long long q = (p - 1) / 2;
+
+    if (g <= 1 || g >= p)
+        return false;
+
+    // Проверяем, что порядок g не делит 2.
+    if (powerMod(g, 2, p) == 1)
+        return false;
+
+    // Проверяем, что порядок g не делит q.
+    if (powerMod(g, q, p) == 1)
+        return false;
+
+    return true;
+}
+
+
+// Генерация безопасного простого числа.
+long long generateSafePrime()
+{
+    long long q;
+    long long p;
+
+    do
+    {
+        // Генерируем простое q.
+        q = generatePrime();
+
+        // Строим p = 2q + 1.
+        p = 2 * q + 1;
+    }
+    while (!isPrime(p));
+
+    return p;
+}
+
+
+// Генерация первообразного корня для безопасного простого p.
+long long generatePrimitiveRoot(long long p)
+{
+    for (long long g = 2; g < p; g++)
+    {
+        if (isPrimitiveRoot(g, p))
+            return g;
+    }
+
+    return -1;
+}
+
+void diffieHellman()
+{
+    long long p;
+    long long g;
+    long long Xa;
+    long long Xb;
+    long long Ya;
+    long long Yb;
+    long long keyAlice;
+    long long keyBob;
 
     int choice;
 
-    cout << "1 - Ввести a и b с клавиатуры" << endl;
-    cout << "2 - Сгенерировать a и b" << endl;
-    cout << "3 - Сгенерировать простые a и b" << endl;
+    cout << "АЛГОРИТМ ДИФФИ-ХЕЛЛМАНА" << endl;
+
+    cout << "1 - Ввести p, g, Xa, Xb" << endl;
+    cout << "2 - Сгенерировать параметры" << endl;
     cout << "Выберите вариант: ";
 
     cin >> choice;
 
-    long long a, b;
-
     if (choice == 1)
     {
-        cout << "Введите a: ";
-        cin >> a;
+        cout << endl;
 
-        cout << "Введите b: ";
-        cin >> b;
+        cout << "Введите p (безопасное простое число): ";
+        cin >> p;
+
+        cout << "Введите g (первообразный корень по модулю p): ";
+        cin >> g;
+
+        cout << "Введите закрытый ключ Алисы Xa: ";
+        cin >> Xa;
+
+        cout << "Введите закрытый ключ Боба Xb: ";
+        cin >> Xb;
+
+        // Проверяем, что p действительно простое.
+        if (!isPrime(p))
+        {
+            cout << endl;
+            cout << "Ошибка: p должно быть простым числом!" << endl;
+            return;
+        }
+
+        if (!isPrimitiveRoot(g, p))
+        {
+            cout << endl;
+            cout << "Ошибка: g не является первообразным корнем по модулю p!" << endl;
+            return;
+        }
+
+        if (Xa <= 0 || Xa >= p - 1)
+        {
+            cout << endl;
+            cout << "Ошибка: Xa должно находиться в диапазоне 1 ... p-2!" << endl;
+            return;
+        }
+
+        if (Xb <= 0 || Xb >= p - 1)
+        {
+            cout << endl;
+            cout << "Ошибка: Xb должно находиться в диапазоне 1 ... p-2!" << endl;
+            return;
+        }
     }
+
     else if (choice == 2)
     {
-        a = generateNumber();
-        b = generateNumber();
+        p = generateSafePrime();
 
-        cout << "Сгенерировано:" << endl;
-        cout << "a = " << a << endl;
-        cout << "b = " << b << endl;
-    }
-    else if (choice == 3)
-    {
-        a = generatePrime();
-        b = generatePrime();
+        g = generatePrimitiveRoot(p);
 
-        cout << "Сгенерировано:" << endl;
-        cout << "Простое a = " << a << endl;
-        cout << "Простое b = " << b << endl;
+        if (g == -1)
+        {
+            cout << "Ошибка генерации первообразного корня!" << endl;
+            return;
+        }
+
+        Xa = 1 + rand() % (p - 2);
+
+        Xb = 1 + rand() % (p - 2);
+
+        cout << endl;
+        cout << "Параметры сгенерированы автоматически." << endl;
     }
+
     else
     {
         cout << "Ошибка!" << endl;
-        return 0;
+        return;
     }
 
-    // Проверка простоты
+    Ya = powerMod(g, Xa, p);
+    Yb = powerMod(g, Xb, p);
+
+    keyAlice = powerMod(Yb, Xa, p);
+    keyBob = powerMod(Ya, Xb, p);
+
+    cout << endl;
+    cout << "----------------------------------------" << endl;
+    cout << "Общие параметры:" << endl;
+    cout << "p = " << p << endl;
+    cout << "g = " << g << endl;
+
+    cout << endl;
+    cout << "Закрытые ключи:" << endl;
+    cout << "Xa (Алиса) = " << Xa << endl;
+    cout << "Xb (Боб)   = " << Xb << endl;
+
+    cout << endl;
+    cout << "Открытые ключи:" << endl;
+    cout << "Ya (Алиса) = " << Ya << endl;
+    cout << "Yb (Боб)   = " << Yb << endl;
+
+    cout << endl;
+    cout << "Общие секретные ключи:" << endl;
+    cout << "Ключ Алисы = " << keyAlice << endl;
+    cout << "Ключ Боба  = " << keyBob << endl;
+
+    // ========================================
+    // Проверка результата
+    // ========================================
+
+    cout << endl;
+
+    if (keyAlice == keyBob)
+    {
+        cout << "УСПЕХ!" << endl;
+        cout << "Общие ключи совпадают." << endl;
+        cout << "Общий секретный ключ = " << keyAlice << endl;
+    }
+    else
+    {
+        // Теоретически при корректных параметрах
+        // такого произойти не должно.
+        cout << "ОШИБКА!" << endl;
+        cout << "Общие ключи не совпадают." << endl;
+    }
+
+    cout << "----------------------------------------" << endl;
+}
+
+int main()
+{
+    srand(time(0));
+
+    // int choice;
+
+    // cout << "1 - Ввести a и b с клавиатуры" << endl;
+    // cout << "2 - Сгенерировать a и b" << endl;
+    // cout << "3 - Сгенерировать простые a и b" << endl;
+    // cout << "Выберите вариант: ";
+
+    // cin >> choice;
+
+    // long long a, b;
+
+    // if (choice == 1)
+    // {
+    //     cout << "Введите a: ";
+    //     cin >> a;
+
+    //     cout << "Введите b: ";
+    //     cin >> b;
+    // }
+    // else if (choice == 2)
+    // {
+    //     a = generateNumber();
+    //     b = generateNumber();
+
+    //     cout << "Сгенерировано:" << endl;
+    //     cout << "a = " << a << endl;
+    //     cout << "b = " << b << endl;
+    // }
+    // else if (choice == 3)
+    // {
+    //     a = generatePrime();
+    //     b = generatePrime();
+
+    //     cout << "Сгенерировано:" << endl;
+    //     cout << "Простое a = " << a << endl;
+    //     cout << "Простое b = " << b << endl;
+    // }
+    // else
+    // {
+    //     cout << "Ошибка!" << endl;
+    //     return 0;
+    // }
+
+    // // Проверка простоты
     
-    cout << endl;
-    cout << "Проверка Ферма:" << endl;
+    // cout << endl;
+    // cout << "Проверка Ферма:" << endl;
 
-    if (isPrime(a))
-        cout << "a = " << a << " вероятно простое" << endl;
-    else
-        cout << "a = " << a << " составное" << endl;
+    // if (isPrime(a))
+    //     cout << "a = " << a << " вероятно простое" << endl;
+    // else
+    //     cout << "a = " << a << " составное" << endl;
 
-    if (isPrime(b))
-        cout << "b = " << b << " вероятно простое" << endl;
-    else
-        cout << "b = " << b << " составное" << endl;
-
-
-    // Обобщённый алгоритм Евклида
-
-    long long x, y;
-
-    long long d = gcdExtended(a, b, x, y);
-
-    cout << endl;
-    cout << "Обобщённый алгоритм Евклида:" << endl;
-    cout << "НОД(" << a << ", " << b << ") = " << d << endl;
-    cout << "x = " << x << endl;
-    cout << "y = " << y << endl;
-
-    cout << endl;
-    cout << a << " * " << x << " + "
-         << b << " * " << y << " = " << d << endl;
-
-    // Быстрое возведение в степень
-
-    long long n, p;
-
-    cout << endl;
-    cout << "Быстрое возведение в степень по модулю" << endl;
-
-    cout << "Введите число a: ";
-    cin >> a;
-
-    cout << "Введите степень n: ";
-    cin >> n;
-
-    cout << "Введите модуль p: ";
-    cin >> p;
-
-    cout << a << "^" << n << " mod " << p
-         << " = " << powerMod(a, n, p) << endl;
-
-    // ДИСКРЕТНЫЙ ЛОГАРИФМ
-    cout << endl;
-    cout << "Дискретный логарифм. Алгоритм: Шаг младенца, шаг великана" << endl;
-
-    int logChoice;
-
-    cout << endl;
-    cout << "1 - Ввести a, y, p" << endl;
-    cout << "2 - Сгенерировать a, y, p" << endl;
-    cout << "Выберите вариант: ";
-
-    cin >> logChoice;
+    // if (isPrime(b))
+    //     cout << "b = " << b << " вероятно простое" << endl;
+    // else
+    //     cout << "b = " << b << " составное" << endl;
 
 
-    long long base;
-    long long value;
-    long long prime;
-    long long generatedX = -1;
+    // // Обобщённый алгоритм Евклида
+
+    // long long x, y;
+
+    // long long d = gcdExtended(a, b, x, y);
+
+    // cout << endl;
+    // cout << "Обобщённый алгоритм Евклида:" << endl;
+    // cout << "НОД(" << a << ", " << b << ") = " << d << endl;
+    // cout << "x = " << x << endl;
+    // cout << "y = " << y << endl;
+
+    // cout << endl;
+    // cout << a << " * " << x << " + "
+    //      << b << " * " << y << " = " << d << endl;
+
+    // // Быстрое возведение в степень
+
+    // long long n, p;
+
+    // cout << endl;
+    // cout << "Быстрое возведение в степень по модулю" << endl;
+
+    // cout << "Введите число a: ";
+    // cin >> a;
+
+    // cout << "Введите степень n: ";
+    // cin >> n;
+
+    // cout << "Введите модуль p: ";
+    // cin >> p;
+
+    // cout << a << "^" << n << " mod " << p
+    //      << " = " << powerMod(a, n, p) << endl;
+
+    // // ДИСКРЕТНЫЙ ЛОГАРИФМ
+    // cout << endl;
+    // cout << "Дискретный логарифм. Алгоритм: Шаг младенца, шаг великана" << endl;
+
+    // int logChoice;
+
+    // cout << endl;
+    // cout << "1 - Ввести a, y, p" << endl;
+    // cout << "2 - Сгенерировать a, y, p" << endl;
+    // cout << "Выберите вариант: ";
+
+    // cin >> logChoice;
 
 
-    if (logChoice == 1)
-    {
-        cout << endl;
-        cout << "Введите a: ";
-        cin >> base;
+    // long long base;
+    // long long value;
+    // long long prime;
+    // long long generatedX = -1;
 
-        cout << "Введите y: ";
-        cin >> value;
 
-        cout << "Введите p (простое): ";
-        cin >> prime;
-    }
-    else if (logChoice == 2)
-    {
-        generateDiscreteLogParameters(
-            base,
-            value,
-            prime,
-            generatedX
-        );
+    // if (logChoice == 1)
+    // {
+    //     cout << endl;
+    //     cout << "Введите a: ";
+    //     cin >> base;
 
-        cout << endl;
-        cout << "Сгенерированные параметры:" << endl;
-        cout << "a = " << base << endl;
-        cout << "y = " << value << endl;
-        cout << "p = " << prime << endl;
+    //     cout << "Введите y: ";
+    //     cin >> value;
 
-        // cout << "Скрытое x = " << generatedX << endl;
-    }
-    else
-    {
-        cout << "Ошибка!" << endl;
-        return 0;
-    }
+    //     cout << "Введите p (простое): ";
+    //     cin >> prime;
+    // }
+    // else if (logChoice == 2)
+    // {
+    //     generateDiscreteLogParameters(
+    //         base,
+    //         value,
+    //         prime,
+    //         generatedX
+    //     );
 
-    // Поиск дискретного логарифма
+    //     cout << endl;
+    //     cout << "Сгенерированные параметры:" << endl;
+    //     cout << "a = " << base << endl;
+    //     cout << "y = " << value << endl;
+    //     cout << "p = " << prime << endl;
 
-    long long resultX = discreteLogBSGS(base, value, prime);
+    //     // cout << "Скрытое x = " << generatedX << endl;
+    // }
+    // else
+    // {
+    //     cout << "Ошибка!" << endl;
+    //     return 0;
+    // }
 
-    if (resultX == -1)
-    {
-        cout << endl;
-        cout << "Решение не найдено." << endl;
-    }
-    else
-    {
-        cout << endl;
-        cout << "Результат:" << endl;
+    // // Поиск дискретного логарифма
 
-        cout << "x = " << resultX << endl;
+    // long long resultX = discreteLogBSGS(base, value, prime);
 
-        cout << endl;
-        cout << "Проверка:" << endl;
+    // if (resultX == -1)
+    // {
+    //     cout << endl;
+    //     cout << "Решение не найдено." << endl;
+    // }
+    // else
+    // {
+    //     cout << endl;
+    //     cout << "Результат:" << endl;
 
-        cout << base << "^" << resultX
-             << " mod " << prime
-             << " = "
-             << powerMod(base, resultX, prime)
-             << endl;
+    //     cout << "x = " << resultX << endl;
 
-        cout << "Ожидалось y = " << value << endl;
-    }
+    //     cout << endl;
+    //     cout << "Проверка:" << endl;
+
+    //     cout << base << "^" << resultX
+    //          << " mod " << prime
+    //          << " = "
+    //          << powerMod(base, resultX, prime)
+    //          << endl;
+
+    //     cout << "Ожидалось y = " << value << endl;
+    // }
+
+    diffieHellman();
 
     return 0;
 }
